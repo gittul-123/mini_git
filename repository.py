@@ -7,7 +7,7 @@ class Repository:
     """Mini Git 저장소 하나의 상태(브랜치, HEAD, 커밋 그래프 등)를 관리한다."""
 
     def __init__(self):
-        """현재 HEAD가 가리키는 커밋을 가리키는 새 브랜치를 생성한다."""
+        """저장소 상태를 담을 빈 컨테이너들을 초기화한다."""
         self.commits = {}
         self.branches = {} # branch_name -> HEAD commit_hash (없으면 None)
         self.current_branch = None
@@ -23,7 +23,7 @@ class Repository:
         self.user = user_name
 
     def commit(self, message):
-        """현재 HEAD가 가리키는 커밋을 가리키는 새 브랜치를 생성한다."""
+        """현재 HEAD를 부모로 하는 새 커밋을 생성하고, 브랜치의 HEAD를 갱신한다."""
         head = self.branches[self.current_branch]
 
         if head is None:
@@ -45,6 +45,7 @@ class Repository:
         return commit_hash
 
     def update_index(self, commit):
+        """새 커밋의 메시지와 작성자 정보를 역색인에 등록한다."""
         tokens = commit.message.split()
         for word in tokens:
             keyword = word.lower()
@@ -154,9 +155,10 @@ class Repository:
             return None
 
         path = [end]
-        while current != start:
-            current = came_from[current]
-            path.append(current)
+        node = end
+        while node != start:
+            node = came_from[node]
+            path.append(node)
         path.reverse()
         
         return path

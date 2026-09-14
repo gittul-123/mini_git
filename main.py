@@ -1,3 +1,4 @@
+"""Mini Git CLI 프로그램의 엔트리 포인트. REPL로 명령을 반복 입력받아 실행한다."""
 import shlex
 from repository import Repository
 
