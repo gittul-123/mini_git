@@ -189,9 +189,19 @@ class Repository:
 
 
     def search_keyword(self, keyword):
-        """역색인을 이용해 키워드가 포함된 커밋 메시지를 가진 커밋들을 찾는다."""
-        hashes = self.keyword_index.get(keyword.lower(), [])
-        return hashes
+        """역색인을 이용해 키워드(공백 포함 가능)가 포함된 커밋들을 찾는다.
+
+        keyword에 공백이 있으면 여러 단어로 나눠, 그중 하나라도 포함된
+        커밋을 모두 찾는다(OR 검색).
+        """
+        words = keyword.lower().split()
+        result_hashes = []
+        for word in words:
+            for h in self.keyword_index.get(word, []):
+                if h not in result_hashes:
+                    result_hashes.append(h)
+        return result_hashes
+
 
     def search_author(self,author):
         """역색인을 이용해 지정된 작성자가 작성한 커밋들을 찾는다."""
