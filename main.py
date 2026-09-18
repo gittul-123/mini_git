@@ -7,6 +7,9 @@ repo = Repository()
 while True:
     line = input("mini-git> ")
 
+    if not line.strip():
+        continue
+
     try:
         parts = shlex.split(line)
         command = parts[0].lower()
@@ -103,6 +106,9 @@ while True:
                 for h in hashes:
                     c = repo.commits[h]
                     print(f"- {h}: {c.message}")
+
+        else:
+            raise Exception(f"Unknown command: {command}")
 
     except Exception as e:
         print(str(e))
