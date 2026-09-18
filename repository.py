@@ -107,6 +107,10 @@ class Repository:
 
     def ancestors(self, commit_hash):
         """지정된 커밋에서 도달 가능한 모든 조상 커밋을 출력한다."""
+
+        if commit_hash not in self.commits:
+            raise Exception(f"Unknown commit: {commit_hash}")
+
         stack = list(self.commits[commit_hash].parents)
         visited = set()
 
@@ -124,7 +128,16 @@ class Repository:
         return visited
 
     def path(self, start, end):
-        """두 커밋 사이의 최단 경로(무방향 간선 기준)를 반환한다."""
+        """두 커밋 사이의 최단 경로(무방향 간선 기준)를 반환한다.
+        
+        최단 경로가 여러 개 있으면, "hash1->hash2->..." 문자열 기준으로
+        사전순 가장 작은 경로를 선택한다.
+        """
+        if start not in self.commits:
+            raise Exception(f"Unknown commit: {start}")
+        if end not in self.commits:
+            raise Exception(f"Unknown commit: {end}")
+
         adjacency = {h: set() for h in self.commits}
         for c in self.commits.values():
             for p in c.parents:
@@ -134,34 +147,45 @@ class Repository:
         if start == end:
             return [start]
 
-        queue =deque()
-        queue.append(start)
-        visited = {start} # start는 이미 방문한 걸로 시작
-        came_from = {}
+        dist = {start: 0}
+        best_path = {start: [start]}   # 각 노드까지의, 사전순으로 가장 작은 최단 경로
+        frontier = [start]
+        level = 0
 
-        while queue:
-            current = queue.popleft()
+        while frontier:
+            next_level_candidates = set()
+            for node in frontier:
+                for neighbor in adjacency[node]:
+                    if neighbor not in dist:
+                        next_level_candidates.add(neighbor)
 
-            if current == end:
-                break   # 목표 도착! 반복 멈춤
+            if not next_level_candidates:
+                break
 
-            for neighbor in adjacency[current]:
-                if neighbor not in visited:
-                    visited.add(neighbor)
-                    came_from[neighbor] = current
-                    queue.append(neighbor)
+            level += 1
+            next_frontier = []
 
-        if end not in visited:
+            for node in next_level_candidates:
+                dist[node] = level
+                best_candidate = None
+                # 이 노드로 이어지는, 바로 이전 레벨의 이웃들 중 최선의 경로를 고름
+                for neighbor in adjacency[node]:
+                    if dist.get(neighbor) == level - 1:
+                        candidate = best_path[neighbor] + [node]
+                        if best_candidate is None or "->".join(candidate) < "->".join(best_candidate):
+                            best_candidate = candidate
+                best_path[node] = best_candidate
+                next_frontier.append(node)
+
+            if end in dist:
+                return best_path[end]
+
+            frontier = next_frontier
+
+        if end not in dist:
             return None
 
-        path = [end]
-        node = end
-        while node != start:
-            node = came_from[node]
-            path.append(node)
-        path.reverse()
-        
-        return path
+        return best_path[end]
 
 
     def search_keyword(self, keyword):
